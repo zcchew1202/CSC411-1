@@ -1,7 +1,9 @@
-from sklearn import datasets
+from sklearn import datasets, linear_model
+from sklearn.metrics import mean_squared_error, mean_absolute_error, mean_squared_log_error
 import matplotlib.pyplot as plt
 import numpy as np
 import colorsys
+from q1_linear_regression import RSVLinearRegression
 
 
 def load_data():
@@ -33,25 +35,47 @@ def visualize(X, y, features):
     plt.show()
 
 
-def fit_regression(X,Y):
-    # TODO: implement linear regression
-    # Remember to use np.linalg.solve instead of inverting!
-    raise NotImplementedError()
+def get_split_indices(set_size, training_fraction):
+    """Returns two arrays of indices following len(train U test) == set_size, and train/set_size == training_faction"""
+    assert 0 <= training_fraction <= 1, "training_fraction must be in the range [0,1]"
+
+    train = np.random.choice(range(set_size), int(training_fraction*set_size), replace=False)
+    test = [i for i in range(set_size) if i not in train]
+
+    assert len(train) + len(test) == set_size, "len(train U test) != len(X)"
+
+    return train, test
 
 
 def main():
-    # Load the data
     X, y, features = load_data()
-
-    # Visualize the features
     visualize(X, y, features)
 
-    # TODO: Split data into train and test
+    train_indices, test_indices = get_split_indices(X.shape[0], 0.8)
 
-    # Fit regression model
-    w = fit_regression(X, y)
+    X_train = [X[i] for i in train_indices]
+    y_train = [y[i] for i in train_indices]
+    X_test = [X[i] for i in test_indices]
+    y_test = [y[i] for i in test_indices]
 
-    # Compute fitted values, MSE, etc.
+    regr = RSVLinearRegression()
+    regr.fit(X_train, y_train)
+    y = regr.predict(X_test)
+    mse = mean_squared_error(y_test, y)
+    mae = mean_absolute_error(y_test, y)
+    msle = mean_squared_log_error(y_test, y)
+
+    # sklearn.LinearRegression comparison
+    skl_regr = linear_model.LinearRegression()
+    skl_regr.fit(X_train, y_train)
+    skl_y = skl_regr.predict(X_test)
+    skl_mse = mean_squared_error(y_test, skl_y)
+    skl_mae = mean_absolute_error(y_test, skl_y)
+    skl_msle = mean_squared_log_error(y_test, skl_y)
+
+    print("Mean Squared Error, Mean Absolute Error, Mean Squared Log Error")
+    print(', '.join([str(mse), str(mae), str(msle)]))
+    print(', '.join([str(skl_mse), str(skl_mae), str(skl_msle)]))
 
 
 if __name__ == "__main__":
