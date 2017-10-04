@@ -3,6 +3,7 @@ from sklearn.datasets import load_boston
 
 BATCHES = 50
 
+
 class BatchSampler(object):
     '''
     A (very) simple wrapper to randomly sample batches without replacement.
@@ -70,12 +71,14 @@ def cosine_similarity(vec1, vec2):
 
     return dot / (sum1 * sum2)
 
+
 #TODO: implement linear regression gradient
 def lin_reg_gradient(X, y, w):
     '''
     Compute gradient of linear regression model parameterized by w
     '''
     raise NotImplementedError()
+
 
 def main():
     # Load data and randomly initialise weights
