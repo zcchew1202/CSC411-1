@@ -34,6 +34,29 @@ def visualize_single_graph(X, y, features):
     plt.show()
 
 
+def visualize(X, y, features):
+    fig = plt.figure(figsize=(20, 13))
+    feature_count = X.shape[1]
+
+    marker_style = '.'
+    marker_colors = [colorsys.hsv_to_rgb(i * 1.0 / feature_count, 1, 1) for i in range(feature_count)]
+
+    for i in range(feature_count):
+        Xi = [x[i] for x in X]
+
+        plt.subplot(3, 5, i + 1)
+        if i == 0:
+            plt.ylabel("Median Value of Homes (in thousands)")
+        plt.xlabel(features[i])
+        plt.plot(Xi, y, marker=marker_style, color=marker_colors[i], linestyle='None')
+
+    fig.canvas.set_window_title(
+        "CSC411_A1_Q1: Fig 1: The Boston Housing Dataset Visualization (Median Value of Homes vs. Features)")
+
+    plt.tight_layout()
+    plt.show()
+
+
 def get_split_indices(set_size, training_fraction):
     """Returns two arrays of indices following len(train U test) == set_size, and train/set_size == training_faction"""
     assert 0 <= training_fraction <= 1, "training_fraction must be in the range [0,1]"
@@ -62,7 +85,7 @@ def predict(X, w):
 
 def main():
     X, y, features = load_data()
-    visualize_single_graph(X, y, features)
+    visualize(X, y, features)
 
     train_indices, test_indices = get_split_indices(X.shape[0], 0.8)
 
@@ -89,4 +112,5 @@ def main():
 
 
 if __name__ == "__main__":
+    np.random.seed(0)  # Make runs repeatable
     main()
