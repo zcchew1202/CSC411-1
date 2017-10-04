@@ -96,6 +96,8 @@ def run_k_fold(x, y, taus, k):
 
 
 if __name__ == "__main__":
+    np.random.seed(0)  # Make runs repeatable
+
     # In this exercise we fixed lambda (hard coded to 1e-5) and only set tau value.
     # Feel free to play with lambda as well if you wish
     taus = np.logspace(1.0, 3, 200)
