@@ -102,5 +102,8 @@ if __name__ == "__main__":
     # Feel free to play with lambda as well if you wish
     taus = np.logspace(1.0, 3, 200)
     losses = run_k_fold(x, y, taus, k=5)
+
     plt.plot(losses)
+    plt.ylabel("Average Loss")
+    plt.xlabel("Tau (200 points in logscale from 1->3 [10,1000])")
     print("min loss = {}".format(losses.min()))
