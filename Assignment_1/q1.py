@@ -110,6 +110,9 @@ def main():
             str(mean_squared_log_error(y_test, y_hat))
         ]))
 
+    for i, wi in enumerate(w[1:]):
+        print(features[i] + ": " + str(wi))
+
 
 if __name__ == "__main__":
     np.random.seed(0)  # Make runs repeatable
