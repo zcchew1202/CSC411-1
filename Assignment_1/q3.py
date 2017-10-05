@@ -1,5 +1,6 @@
 import numpy as np
 from sklearn.datasets import load_boston
+import matplotlib.pyplot as plt
 
 BATCH_SIZE = 50
 K = 500
@@ -88,14 +89,27 @@ def main():
         X_b, y_b = batch_sampler.get_batch()
         batch_gradients.append(lin_reg_gradient(X_b, y_b, w))
 
-    mean_batch_gradient = np.array(batch_gradients).sum(axis=0)*(1/K)**2
+    mean_batch_gradient = np.array(batch_gradients).sum(axis=0)*(1/K)
     true_gradient = lin_reg_gradient(X, y, w)
 
-    squared_distance_metric = np.linalg.norm(true_gradient-mean_batch_gradient)
+    squared_distance_metric = np.linalg.norm(true_gradient-mean_batch_gradient)**2
     cosine_similarity_metric = cosine_similarity(true_gradient, mean_batch_gradient)
 
     print("Squared Distance: " + str(squared_distance_metric))
     print("Cosine Similarity: " + str(cosine_similarity_metric))
+
+    variances = list()
+    for m in range(1, 400):
+        batch_sampler = BatchSampler(X, y, m)
+        batch_gradients = list()
+        for k in range(K):
+            X_b, y_b = batch_sampler.get_batch()
+            batch_gradients.append(lin_reg_gradient(X_b, y_b, w))
+        variances.append(np.var([gradient[0] for gradient in batch_gradients]))
+
+    plt.plot([np.log(m) for m in range(1, 400)], [np.log(var) for var in variances])
+    plt.ylabel("Sample Variance of mini-batch gradient estimate (logscale)")
+    plt.xlabel("m (logscale)")
 
 
 if __name__ == '__main__':
