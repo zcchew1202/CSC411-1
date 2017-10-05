@@ -56,8 +56,8 @@ def LRLS(test_data, x_train, y_train, tau, lam=1e-5):  # to implement
     y_hat = list()
     for i in range(test_data.shape[0]):
         # Computing A
-        ln_ai_den = logsumexp([dist[i, j]/(2*tau*tau) for j in range(x_train.shape[0])])
-        ln_ai_numerators = [dist[i, j]/(2*tau*tau) for j in range(x_train.shape[0])]
+        ln_ai_den = logsumexp([-dist[i, j]/(2*tau*tau) for j in range(x_train.shape[0])])
+        ln_ai_numerators = [-dist[i, j]/(2*tau*tau) for j in range(x_train.shape[0])]
         ln_ais = [ln_ai_num - ln_ai_den for ln_ai_num in ln_ai_numerators]
         A = np.diag([np.exp(ln_ai) for ln_ai in ln_ais])
 
