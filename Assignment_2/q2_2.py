@@ -66,7 +66,17 @@ def generative_likelihood(digits, means, covariances):
 
     Should return an n x 10 numpy array 
     '''
-    return None
+    ret = []
+    for digit in digits:
+        class_log_likelihoods = []
+        for k in range(10):
+            exp_part = np.exp((-1 / 2) * np.linalg.multi_dot([
+                np.transpose(digit - means[k]), np.linalg.inv(covariances[k] + 0.01 * np.identity(64)),
+                digit - means[k]]))
+            class_log_likelihoods.append(np.log(
+                ((2*np.pi)**(-64/2)) * (np.linalg.det(covariances[k] + 0.01*np.identity(64)) ** (-1/2)) * exp_part))
+        ret.append(class_log_likelihoods)
+    return ret
 
 def conditional_likelihood(digits, means, covariances):
     '''
@@ -77,7 +87,15 @@ def conditional_likelihood(digits, means, covariances):
     This should be a numpy array of shape (n, 10)
     Where n is the number of datapoints and 10 corresponds to each digit class
     '''
-    return None
+    ret = []
+    generative_likelihoods = generative_likelihood(digits, means, covariances)
+    for gen in generative_likelihoods:
+        den = np.log(sum(np.exp(gen_k) for gen_k in gen)*(1/10))
+        digit_class_conditional_likelihoods = []
+        for gen_k in gen:
+            digit_class_conditional_likelihoods.append(gen_k + np.log(1/10) - den)
+        ret.append(digit_class_conditional_likelihoods)
+    return ret
 
 def avg_conditional_likelihood(digits, labels, means, covariances):
     '''
@@ -87,18 +105,21 @@ def avg_conditional_likelihood(digits, labels, means, covariances):
 
     i.e. the average log likelihood that the model assigns to the correct class label
     '''
-    cond_likelihood = conditional_likelihood(digits, means, covariances)
-
-    # Compute as described above and return
-    return None
+    cond_likelihoods = conditional_likelihood(digits, means, covariances)
+    total_likelihoods = 0
+    for n_indx, cond_like in enumerate(cond_likelihoods):
+        total_likelihoods += cond_like[int(labels[n_indx])]
+    return total_likelihoods / len(digits)
 
 def classify_data(digits, means, covariances):
     '''
     Classify new points by taking the most likely posterior class
     '''
     cond_likelihood = conditional_likelihood(digits, means, covariances)
-    # Compute and return the most likely class
-    pass
+    ret = []
+    for indx, cond_l in enumerate(cond_likelihood):
+        ret.append(max([(k, prob) for k, prob in enumerate(cond_l)], key=lambda x: x[1])[0])
+    return ret
 
 def main():
     train_data, train_labels, test_data, test_labels = data.load_all_data('data')
@@ -107,9 +128,18 @@ def main():
     means = compute_mean_mles(train_data, train_labels)
     covariances = compute_sigma_mles(train_data, train_labels)
 
-    plot_cov_diagonal(covariances)
-
     # Evaluation
+    avg_cond_like_train = avg_conditional_likelihood(train_data, train_labels, means, covariances)
+    avg_cond_like_test = avg_conditional_likelihood(test_data, test_labels, means, covariances)
+    classes_train = classify_data(train_data, means, covariances)
+    classes_test = classify_data(test_data, means, covariances)
+    class_accuracy_train = sum(1 for indx, k in enumerate(classes_train) if train_labels[indx] == k)/len(train_data)
+    class_accuracy_test = sum(1 for indx, k in enumerate(classes_test) if test_labels[indx] == k)/len(test_data)
+
+    print("Average conditional likelihood ->", "\nTrain: ", avg_cond_like_train, "\nTest: ", avg_cond_like_test)
+    print("Classification accuracy->", "\nTrain: ", class_accuracy_train, "\nTest: ", class_accuracy_test)
+
+    plot_cov_diagonal(covariances)
 
 if __name__ == '__main__':
     main()
