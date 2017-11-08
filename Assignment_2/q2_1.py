@@ -8,6 +8,8 @@ import data
 import numpy as np
 # Import pyplot - plt.imshow is useful!
 import matplotlib.pyplot as plt
+import random
+from sklearn.model_selection import KFold
 
 class KNearestNeighbor(object):
     '''
@@ -18,6 +20,7 @@ class KNearestNeighbor(object):
         self.train_data = train_data
         self.train_norm = (self.train_data**2).sum(axis=1).reshape(-1,1)
         self.train_labels = train_labels
+        random.seed(0)  # Make results consistent
 
     def l2_distance(self, test_point):
         '''
@@ -43,8 +46,17 @@ class KNearestNeighbor(object):
 
         You should return the digit label provided by the algorithm
         '''
-        digit = None
-        return digit
+        distances = [(i, dist) for i, dist in enumerate(self.l2_distance(test_point))]
+        distances.sort(key=lambda x: x[1])
+        distances = distances[:k]
+        class_votes = {}
+        for i, dist in distances:
+            if self.train_labels[i] not in class_votes:
+                class_votes[self.train_labels[i]] = 0
+            class_votes[self.train_labels[i]] += 1
+        max_vote_count = max(class_votes.values())
+        conflicting_classes = [cls for cls, votes in class_votes.items() if votes == max_vote_count]
+        return random.choice(conflicting_classes)
 
 def cross_validation(train_data, train_labels, k_range=np.arange(1,16)):
     '''
@@ -54,25 +66,38 @@ def cross_validation(train_data, train_labels, k_range=np.arange(1,16)):
     The intention was for students to take the training data from the knn object - this should be clearer
     from the new function signature.
     '''
+    k_average_accuracy = {}
     for k in k_range:
         # Loop over folds
         # Evaluate k-NN
         # ...
-        pass
+        k_average_accuracy[k] = 0
+        kf = KFold(n_splits=10, random_state=0, shuffle=True)
+        for train_indx, test_indx in kf.split(train_data):
+            k_average_accuracy[k] += classification_accuracy(
+                KNearestNeighbor(np.array([train_data[i] for i in train_indx]),
+                                 np.array([train_labels[i] for i in train_indx])),
+                k, [train_data[i] for i in test_indx], [train_labels[i] for i in test_indx])
+        k_average_accuracy[k] /= 10
+    best_k = max(k_average_accuracy.keys(), key=lambda key: k_average_accuracy[key])
+    return best_k, k_average_accuracy[best_k]
 
 def classification_accuracy(knn, k, eval_data, eval_labels):
     '''
     Evaluate the classification accuracy of knn on the given 'eval_data'
     using the labels
     '''
-    pass
+    predicted_labels = [knn.query_knn(eval_datum, k) for eval_datum in eval_data]
+    return sum(1 for i, label in enumerate(predicted_labels) if eval_labels[i] == label)/len(eval_data)
 
 def main():
     train_data, train_labels, test_data, test_labels = data.load_all_data('data')
-    knn = KNearestNeighbor(train_data, train_labels)
 
-    # Example usage:
-    predicted_label = knn.query_knn(test_data[0], 1)
+    best_k, avg_accuracy = cross_validation(train_data, train_labels)
+    print("Best K: ", best_k, "\nCross validation accuracy: ", avg_accuracy)
+
+    knn = KNearestNeighbor(train_data, train_labels)
+    print("Test accuracy: ", classification_accuracy(knn, best_k, test_data, test_labels))
 
 if __name__ == '__main__':
     main()
