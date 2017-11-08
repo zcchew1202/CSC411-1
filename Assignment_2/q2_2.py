@@ -17,7 +17,8 @@ def compute_mean_mles(train_data, train_labels):
     The ith row will correspond to the mean estimate for digit class i
     '''
     means = np.zeros((10, 64))
-    # Compute means
+    for i in range(0, 10):
+        means[i] = np.mean([train_data[j] for j in range(len(train_data)) if train_labels[j] == i], axis=0)
     return means
 
 def compute_sigma_mles(train_data, train_labels):
@@ -28,14 +29,35 @@ def compute_sigma_mles(train_data, train_labels):
     consisting of a covariance matrix for each digit class 
     '''
     covariances = np.zeros((10, 64, 64))
-    # Compute covariances
+    means = compute_mean_mles(train_data, train_labels)
+    for k in range(10):
+        for i in range(64):
+            for j in range(64):
+                k_indx = [indx for indx in range(len(train_data)) if train_labels[indx] == k]
+                N = len(k_indx)
+                X_i = [train_data[indx][i] for indx in k_indx]
+                X_j = [train_data[indx][j] for indx in k_indx]
+
+                cov_i_j = (1/N) * sum([(X_i[n] - means[k][i]) * (X_j[n] - means[k][j]) for n in range(N)])
+                covariances[k][i][j] = cov_i_j
+
+                # Calculating covariance in other ways to verify correctness
+                # cov_i_j_2 = (1/(N*N)) * sum([sum([(1/2) * (X_i[n1] - X_i[n2]) * (X_j[n1] - X_j[n2])
+                #                                   for n2 in range(N)]) for n1 in range(N)])
+                # cov_i_j_3 = np.cov(X_i, X_j)[0][1]
+                # print(cov_i_j, ", ", cov_i_j_2, ", ", cov_i_j_3)
+
     return covariances
 
 def plot_cov_diagonal(covariances):
     # Plot the log-diagonal of each covariance matrix side by side
-    for i in range(10):
-        cov_diag = np.diag(covariances[i])
-        # ...
+    cov_diagonals = []
+    for k in range(10):
+        cov_diagonals.append(np.reshape(np.diag(covariances[k]), (-1, 8)))
+
+    all_concat = np.concatenate(cov_diagonals, axis=1)
+    plt.imshow(all_concat, cmap='gray')
+    plt.show()
 
 def generative_likelihood(digits, means, covariances):
     '''
@@ -84,6 +106,8 @@ def main():
     # Fit the model
     means = compute_mean_mles(train_data, train_labels)
     covariances = compute_sigma_mles(train_data, train_labels)
+
+    plot_cov_diagonal(covariances)
 
     # Evaluation
 
