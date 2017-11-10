@@ -55,7 +55,7 @@ def plot_cov_diagonal(covariances):
     for k in range(10):
         cov_diagonals.append(np.reshape(np.diag(covariances[k]), (-1, 8)))
 
-    all_concat = np.concatenate(cov_diagonals, axis=1)
+    all_concat = np.concatenate(np.log(cov_diagonals), axis=1)
     plt.imshow(all_concat, cmap='gray')
     plt.show()
 
@@ -128,6 +128,8 @@ def main():
     means = compute_mean_mles(train_data, train_labels)
     covariances = compute_sigma_mles(train_data, train_labels)
 
+    plot_cov_diagonal(covariances)
+
     # Evaluation
     avg_cond_like_train = avg_conditional_likelihood(train_data, train_labels, means, covariances)
     avg_cond_like_test = avg_conditional_likelihood(test_data, test_labels, means, covariances)
@@ -138,8 +140,6 @@ def main():
 
     print("Average conditional likelihood ->", "\nTrain: ", avg_cond_like_train, "\nTest: ", avg_cond_like_test)
     print("Classification accuracy->", "\nTrain: ", class_accuracy_train, "\nTest: ", class_accuracy_test)
-
-    plot_cov_diagonal(covariances)
 
 if __name__ == '__main__':
     main()
