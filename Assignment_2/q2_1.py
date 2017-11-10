@@ -104,7 +104,10 @@ def main():
     print("Test accuracy: ", classification_accuracy(knn, best_k, test_data, test_labels))
 
     knn = KNearestNeighbor(train_data, train_labels)
-    print("K == 1, Train accuracy: ", classification_accuracy(knn, 1, train_data, train_labels))
+    for k in [1, 15]:
+        print("\nK ==", k,
+              "\nTrain accuracy: ", classification_accuracy(knn, k, train_data, train_labels),
+              "\nTest accuracy: ", classification_accuracy(knn, k, test_data, test_labels))
 
 if __name__ == '__main__':
     main()
