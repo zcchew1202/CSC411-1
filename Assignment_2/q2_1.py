@@ -50,13 +50,18 @@ class KNearestNeighbor(object):
         distances.sort(key=lambda x: x[1])
         distances = distances[:k]
         class_votes = {}
+        class_min_dist = {}
         for i, dist in distances:
             if self.train_labels[i] not in class_votes:
                 class_votes[self.train_labels[i]] = 0
+                class_min_dist[self.train_labels[i]] = float("inf")
             class_votes[self.train_labels[i]] += 1
+            if dist < class_min_dist[self.train_labels[i]]:
+                class_min_dist[self.train_labels[i]] = dist
         max_vote_count = max(class_votes.values())
         conflicting_classes = [cls for cls, votes in class_votes.items() if votes == max_vote_count]
-        return random.choice(conflicting_classes)
+        ret = [min(conflicting_classes, key=lambda cls: class_min_dist[cls])]
+        return ret
 
 def cross_validation(train_data, train_labels, k_range=np.arange(1,16)):
     '''
@@ -68,17 +73,15 @@ def cross_validation(train_data, train_labels, k_range=np.arange(1,16)):
     '''
     k_average_accuracy = {}
     for k in k_range:
-        # Loop over folds
-        # Evaluate k-NN
-        # ...
         k_average_accuracy[k] = 0
-        kf = KFold(n_splits=10, random_state=0, shuffle=True)
+        kf = KFold(n_splits=10)
         for train_indx, test_indx in kf.split(train_data):
             k_average_accuracy[k] += classification_accuracy(
                 KNearestNeighbor(np.array([train_data[i] for i in train_indx]),
                                  np.array([train_labels[i] for i in train_indx])),
                 k, [train_data[i] for i in test_indx], [train_labels[i] for i in test_indx])
         k_average_accuracy[k] /= 10
+        print("[", k, "]", "Cross validation accuracy: ", k_average_accuracy[k])  # Debugging
     best_k = max(k_average_accuracy.keys(), key=lambda key: k_average_accuracy[key])
     return best_k, k_average_accuracy[best_k]
 
@@ -93,10 +96,11 @@ def classification_accuracy(knn, k, eval_data, eval_labels):
 def main():
     train_data, train_labels, test_data, test_labels = data.load_all_data('data')
 
-    best_k, avg_accuracy = cross_validation(train_data, train_labels)
-    print("Best K: ", best_k, "\nCross validation accuracy: ", avg_accuracy)
+    best_k, cross_validation_avg_accuracy = cross_validation(train_data, train_labels)
+    print("Best K: ", best_k, "\nCross validation accuracy: ", cross_validation_avg_accuracy)
 
     knn = KNearestNeighbor(train_data, train_labels)
+    print("Train accuracy: ", classification_accuracy(knn, best_k, train_data, train_labels))
     print("Test accuracy: ", classification_accuracy(knn, best_k, test_data, test_labels))
 
 if __name__ == '__main__':
