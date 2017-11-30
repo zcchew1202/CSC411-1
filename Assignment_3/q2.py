@@ -61,7 +61,7 @@ class GDOptimizer(object):
     def update_params(self, params, grad):
         # Update parameters using GD with momentum and return
         # the updated parameters
-        self.vel = self.beta * self.vel + self.lr * grad
+        self.vel = self.beta * np.array(self.vel) + self.lr * np.array(grad)
         return params - self.vel
 
 
@@ -73,6 +73,7 @@ class SVM(object):
     def __init__(self, c, feature_count):
         self.c = c
         self.w = np.random.normal(0.0, 0.1, feature_count)
+        self.w[0] = 1  # Setting bias parameter to 1
         
     def hinge_loss(self, X, y):
         '''
@@ -81,7 +82,10 @@ class SVM(object):
         Returns a length-n vector containing the hinge-loss per data point.
         '''
         # Implement hinge loss
-        return None
+        loss = []
+        for i, x in enumerate(X):
+            loss.append(max([1 - y[i] * np.linalg.multi_dot([np.transpose(self.w), x]), 0]))
+        return np.array(loss)
 
     def grad(self, X, y):
         '''
@@ -91,7 +95,11 @@ class SVM(object):
         Returns the gradient with respect to the SVM parameters (shape (m,)).
         '''
         # Compute (sub-)gradient of SVM objective
-        return None
+        hinge_loss_grads = np.array([np.zeros(X[0].shape) if loss == 0 else -np.dot(y[i], X[i])
+                                     for i, loss in enumerate(self.hinge_loss(X, y))])
+        zero_bias_w = self.w
+        zero_bias_w[0] = 0
+        return (self.c/len(X)) * np.sum(np.array([zero_bias_w + loss_grad for loss_grad in hinge_loss_grads]), axis=0)
 
     def classify(self, X):
         '''
@@ -100,7 +108,7 @@ class SVM(object):
         Returns the predicted class labels (shape (n,))
         '''
         # Classify points as +1 or -1
-        return None
+        return np.array([1 if np.dot(np.transpose(self.w), x) >= 0 else -1 for x in X])
 
 def load_data():
     '''
@@ -128,6 +136,7 @@ def load_data():
     print("-------------------------------")
     return train_data, train_targets, test_data, test_targets
 
+
 def optimize_test_function(optimizer, w_init=10.0, steps=200):
     '''
     Optimize the simple quadratic test function and return the parameter history.
@@ -146,13 +155,19 @@ def optimize_test_function(optimizer, w_init=10.0, steps=200):
         pass
     return w_history
 
+
 def optimize_svm(train_data, train_targets, penalty, optimizer, batchsize, iters):
     '''
     Optimize the SVM with the given hyperparameters. Return the trained SVM.
 
     SVM weights can be updated using the attribute 'w'. i.e. 'svm.w = updated_weights'
     '''
-    return None
+    batch_sampler = BatchSampler(train_data, train_targets, batchsize)
+    svm = SVM(penalty, train_data.shape[1])
+    for _ in range(iters):
+        x_batch, y_batch = batch_sampler.get_batch()
+        svm.w = optimizer.update_params(svm.w, svm.grad(x_batch, y_batch))
+    return svm
 
 
 if __name__ == '__main__':
@@ -168,3 +183,29 @@ if __name__ == '__main__':
     plt.plot(wt_b1)
     plt.plot(wt_b2)
     plt.show()
+
+    # Q2.3, applying SVM on 4-vs-9 digits on MNIST
+    train_data, train_targets, test_data, test_targets = load_data()
+    train_data = np.array([np.append([1], train) for train in train_data])
+    test_data = np.array([np.append([1], test) for test in test_data])
+
+
+    def do_everything(beta):
+        svm = optimize_svm(train_data, train_targets, 1.0, GDOptimizer(0.05, beta), 100, 500)
+        train_predictions = svm.classify(train_data)
+        test_predictions = svm.classify(test_data)
+
+        train_accuracy = (100.0/len(train_data)) * \
+                         sum([1 if train_predictions[i] == train_targets[i] else 0 for i in range(len(train_data))])
+        test_accuracy = (100.0/len(test_data)) * \
+                        sum([1 if test_predictions[i] == test_targets[i] else 0 for i in range(len(test_data))])
+
+        print("Beta == " + str(beta))
+        print("Training set classification accuracy: " + str(train_accuracy))
+        print("Test set classification accuracy: " + str(test_accuracy))
+
+        plt.imshow(np.reshape(svm.w[1:], (-1, 28)), cmap='gray')
+        plt.show()
+
+    do_everything(0.0)
+    do_everything(0.1)
